@@ -6,6 +6,7 @@
     "dev": "node file.js",
     "start": "nodemon file.js"
   },
+  "type": "module",
   "keywords": [],
   "author": "Azimjon",
   "license": "ISC",

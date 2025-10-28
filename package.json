@@ -1,7 +1,7 @@
 {
   "name": "ai-server",
   "version": "1.0.0",
-  "main": "app.js",
+  "main": "file.js",
   "scripts": {
     "dev": "node file.js",
     "start": "nodemon file.js"

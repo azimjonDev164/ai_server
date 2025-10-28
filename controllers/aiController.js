@@ -53,3 +53,38 @@ export const getContent = async (req, res) => {
     return res.status(500).json({ message: "Server error!" });
   }
 };
+
+export const getContenttoLotin = async (text) => {
+  if (!text || !text.trim()) {
+    return res.status(400).json({ message: "Please provide some input text." });
+  }
+
+  try {
+    const prompt = `You are an expert AI assistant that helps people convert kirilcha to lotin
+      1.Always reply in JSON format only with these keys:
+
+      {
+        "data": "string"
+      }
+      Now use the same logic for this user input:
+      ${text}
+    `;
+
+    const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent(prompt);
+    const output = result.response.text();
+
+    const cleanedOutput = output.replace(/```json|```/g, "").trim();
+    let jsonResponse;
+    try {
+      jsonResponse = JSON.parse(cleanedOutput);
+    } catch {
+      jsonResponse = { message: "Invalid JSON format", raw: cleanedOutput };
+    }
+
+    return jsonResponse;
+  } catch (error) {
+    console.error("Server error!", error);
+    return { message: "Server error!" };
+  }
+};

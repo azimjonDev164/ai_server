@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "dev": "node app.js",
-    "start": "nodemon app.js"
+    "dev": "node file.js",
+    "start": "nodemon file.js"
   },
   "keywords": [],
   "author": "Azimjon",
@@ -14,9 +14,12 @@
     "@google/genai": "^1.25.0",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.12.2",
+    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
+    "docx": "^9.5.1",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "officegen": "^0.6.5"
   }
 }

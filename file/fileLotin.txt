@@ -1,0 +1,5 @@
+```json
+{
+  "data": "Quyidagi matnlar — shu kodni tushunish uchun kiril"
+}
+```

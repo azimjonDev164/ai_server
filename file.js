@@ -3,7 +3,14 @@ import cors from "cors";
 import dotenv from "dotenv";
 import fs from "fs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Document, Packer, Paragraph, HeadingLevel } from "docx";
+import {
+  Document,
+  Packer,
+  ImageRun,
+  Paragraph,
+  HeadingLevel,
+  AlignmentType,
+} from "docx";
 
 dotenv.config();
 const app = express();
@@ -12,12 +19,12 @@ app.use(cors());
 app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const styles = fs.readFileSync("./assets/styles.xml", "utf-8");
 
 app.post("/generate-docx", async (req, res) => {
   try {
     const { topic } = req.body;
     if (!topic) return res.status(400).json({ error: "Topic is required" });
-
     console.log("📘 Received topic:", topic);
 
     // 🔹 Gemini prompt
@@ -34,7 +41,7 @@ app.post("/generate-docx", async (req, res) => {
       Guidelines:
       - The title should be short and academic.
       - The outline should contain 4–6 main sections.
-      - For each outline point, write 2-3 paragraphs including 345 words
+      - For each outline point, write 2-3 paragraphs including 345 words and if formules exists, add those 
       - Each paragraph should be factual and clear.
       - Include APA-style references.
       - Conclusion must include at least 35 words.
@@ -46,16 +53,15 @@ app.post("/generate-docx", async (req, res) => {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
 
-    // 🧠 Get raw text
     let text = result.response.text();
 
     // 🧹 Clean up response
     text = text
       .replace(/```json/g, "")
       .replace(/```/g, "")
-      .replace(/\*\*(.*?)\*\*/g, "$1") // ✅ remove **bold**
-      .replace(/\*(.*?)\*/g, "$1")     // ✅ remove *italic*
-      .replace(/\\n/g, " ")            // ✅ remove literal \n
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/\\n/g, " ")
       .replace(/\n/g, " ")
       .replace(/\s+/g, " ")
       .trim();
@@ -69,107 +75,147 @@ app.post("/generate-docx", async (req, res) => {
       return res.status(500).send("Invalid JSON from Gemini");
     }
 
-    // ✅ Log parsed structure for debugging
-    console.log("✅ Parsed structure:", Object.keys(data));
-
     // 🧱 Validate essential fields
     if (!data.title || !data.outline || !data.conclusion) {
       console.error("⚠️ Incomplete data:", data);
       return res.status(500).send("Gemini returned incomplete JSON");
     }
 
-    // 📝 DOCX document
-    const doc = new Document({
-      sections: [
-        {
-          children: [
-            // 🔹 Title
-            new Paragraph({
-              text: data.title || topic,
-              heading: HeadingLevel.TITLE,
-              alignment: "center",
-            }),
+    console.log("sacussfully: ", Object.keys(data));
 
-            new Paragraph({ text: "" }),
+    // 📝 Build sections
+    const sections = [];
 
-            // 🔹 Outline (Reja)
-            new Paragraph({
-              text: "REJA",
-              heading: HeadingLevel.HEADING_2,
-              alignment: "center",
-            }),
-            ...(data.outline || []).map(
-              (point, i) =>
-                new Paragraph({
-                  text: `${i + 1}. ${point}`,
-                  style: "ListParagraph",
-                })
-            ),
-
-            new Paragraph({ text: "" }),
-
-            // 🔹 Each section
-            ...(data.outline || []).flatMap((point) => {
-              let paragraphs = [];
-
-              // ✅ Handle both array or object formats
-              if (Array.isArray(data.paragraphs)) {
-                const parasObj = data.paragraphs.find((p) => p[point]);
-                paragraphs = parasObj ? parasObj[point] : [];
-              } else if (
-                typeof data.paragraphs === "object" &&
-                data.paragraphs !== null
-              ) {
-                paragraphs = data.paragraphs[point] || [];
-              }
-
-              // ✅ Ensure array format
-              if (!Array.isArray(paragraphs)) paragraphs = [String(paragraphs)];
-
-              return [
-                new Paragraph({
-                  text: point.toUpperCase(),
-                  heading: HeadingLevel.HEADING_2,
-                  alignment: "center",
-                }),
-                ...paragraphs.map(
-                  (para) =>
-                    new Paragraph({
-                      text: para,
-                      size: 14,
-                      spacing: { before: 200 },
-                      indent: { firstLine: 720 },
-                    })
-                ),
-              ];
-            }),
-
-            // 🔹 Conclusion
-            new Paragraph({
-              text: "XULOSA",
-              heading: HeadingLevel.HEADING_2,
-              alignment: "center",
-            }),
-            new Paragraph({
-              text: data.conclusion,
-              size: 14,
-              indent: { firstLine: 720 },
-            }),
-
-            new Paragraph({ text: "" }),
-
-            // 🔹 References
-            new Paragraph({
-              text: "ADABIYOTLAR",
-              heading: HeadingLevel.HEADING_2,
-              alignment: "center",
-            }),
-            ...(data.references || []).map(
-              (ref, i) => new Paragraph({ text: `${i + 1}. ${ref}` })
-            ),
-          ],
-        },
+    sections.push({
+      children: [
+        new Paragraph({
+          text: "O’ZBEKISTON RESPUBLIKASI OLIY TA’LIM, FAN VA INNOVATSIYALAR HAMDA RAQAMLI TEXNOLOGIYALAR VAZIRLIGI MUHAMMAD AL-XORAZMIY NOMIDAGI TOSHKENT AXBOROT TEXNOLOGIYALARI UNIVERSITETI",
+          heading: HeadingLevel.TITLE,
+          alignment: "center",
+        }),
+        new Paragraph({ text: "" }),
+        new Paragraph({ text: "" }),
+        new Paragraph({
+          text: "Matematik injiniring asoslari",
+          heading: HeadingLevel.TITLE,
+          alignment: "center",
+        }),
+        new Paragraph({ text: "" }),
+        new Paragraph({
+          text: "Bajardi: Polvonov Azimjon",
+          heading: HeadingLevel.TITLE,
+          alignment: "end",
+        }),
+        new Paragraph({
+          text: "Tekshirdi: Ravshanov Shohjaxon",
+          heading: HeadingLevel.TITLE,
+          alignment: "end",
+        }),
+        new Paragraph({ text: "" }),
+        new Paragraph({ text: "" }),
+        new Paragraph({
+          text: "TOSHKENT 2025",
+          heading: HeadingLevel.TITLE,
+          alignment: "center",
+        }),
       ],
+    });
+
+    // 🔹 Title + Outline section
+    sections.push({
+      properties: { pageBreakBefore: true },
+      children: [
+        new Paragraph({
+          text: data.title,
+          heading: HeadingLevel.TITLE,
+          alignment: "center",
+        }),
+        new Paragraph({ text: "" }),
+        new Paragraph({
+          text: "REJA",
+          heading: HeadingLevel.HEADING_2,
+          alignment: "center",
+        }),
+        ...(data.outline || []).map(
+          (point, i) =>
+            new Paragraph({
+              text: `${i + 1}. ${point}`,
+              style: "ListParagraph",
+            })
+        ),
+        new Paragraph({ text: "" }),
+      ],
+    });
+
+    // 🔹 Each outline point in its own section
+    (data.outline || []).forEach((point) => {
+      let paragraphs = [];
+      const parasObj = data.paragraphs.find((p) => p[point]);
+      if (parasObj) paragraphs = parasObj[point];
+      if (!Array.isArray(paragraphs)) paragraphs = [String(paragraphs)];
+
+      sections.push({
+        properties: { pageBreakBefore: true },
+        children: [
+          new Paragraph({
+            text: point.toUpperCase(),
+            heading: HeadingLevel.HEADING_2,
+            alignment: "center",
+          }),
+          ...paragraphs.map(
+            (para) =>
+              new Paragraph({
+                alignment: AlignmentType.JUSTIFIED,
+                text: para,
+                size: 28,
+                spacing: { before: 360 },
+                indent: { firstLine: 720 },
+              })
+          ),
+        ],
+      });
+    });
+
+    // 🔹 Conclusion section
+    sections.push({
+      properties: { pageBreakBefore: true },
+      children: [
+        new Paragraph({
+          text: "XULOSA",
+          heading: HeadingLevel.HEADING_2,
+          alignment: "center",
+        }),
+        new Paragraph({
+          text: data.conclusion,
+          alignment: AlignmentType.JUSTIFIED,
+          size: 28,
+          indent: { firstLine: 720 },
+        }),
+      ],
+    });
+
+    // 🔹 References section
+    sections.push({
+      properties: { pageBreakBefore: true },
+      children: [
+        new Paragraph({
+          text: "ADABIYOTLAR",
+          heading: HeadingLevel.HEADING_2,
+          alignment: "center",
+        }),
+        ...(data.references || []).map(
+          (ref, i) =>
+            new Paragraph({
+              alignment: AlignmentType.JUSTIFIED,
+              text: `${i + 1}. ${ref}`,
+            })
+        ),
+      ],
+    });
+
+    const doc = new Document({
+      externalStyles: styles,
+      sections,
     });
 
     // 📦 Save & send DOCX
@@ -179,7 +225,7 @@ app.post("/generate-docx", async (req, res) => {
 
     res.download(filePath, `${topic}.docx`, (err) => {
       if (err) console.error("Download error:", err);
-      fs.unlinkSync(filePath); // delete after sending
+      fs.unlinkSync(filePath);
     });
   } catch (err) {
     console.error("❌ Error generating DOCX:", err);

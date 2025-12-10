@@ -41,7 +41,7 @@ app.post("/generate-docx", async (req, res) => {
       Guidelines:
       - The title should be short and academic.
       - The outline should contain 4–6 main sections.
-      - For each outline point, write  paragraphs including 345 words and if formules exists, add those 
+      - For each outline point, write 2-3 paragraphs including 345 words and if formules exists, add those 
       - Each paragraph should be factual and clear.
       - Include APA-style references.
       - Conclusion must include at least 35 words.
